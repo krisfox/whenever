@@ -41,6 +41,7 @@ Capistrano::Configuration.instance(:must_exist).load do
             run "cd #{fetch :release_path} && #{fetch :whenever_command} #{fetch :whenever_clear_flags}", options
           elsif (fetch :whenever_git_deploy)
 	          run "#{fetch :whenever_command} #{fetch :whenever_clear_flags}", options
+	        end
         end
 				if fetch :whenever_git_deploy
 					run "#{fetch :whenever_command} #{fetch :whenever_update_flags}", options
