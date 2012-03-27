@@ -7,6 +7,7 @@ Capistrano::Configuration.instance(:must_exist).load do
   _cset(:whenever_variables)    { "environment=#{fetch :whenever_environment}" }
   _cset(:whenever_update_flags) { "--update-crontab #{fetch :whenever_identifier} --set #{fetch :whenever_variables}" }
   _cset(:whenever_clear_flags)  { "--clear-crontab #{fetch :whenever_identifier}" }
+  _cset(:whenever_git_deploy)   { false }
 
   # Disable cron jobs at the begining of a deploy.
   after "deploy:update_code", "whenever:clear_crontab"
@@ -34,14 +35,18 @@ Capistrano::Configuration.instance(:must_exist).load do
 
       if find_servers(options).any?
         on_rollback do
-          if fetch :previous_release
+          if !(fetch :whenever_git_deploy) && fetch :previous_release 
             run "cd #{fetch :previous_release} && #{fetch :whenever_command} #{fetch :whenever_update_flags}", options
-          else
+          elsif !(fetch :whenever_git_deploy)
             run "cd #{fetch :release_path} && #{fetch :whenever_command} #{fetch :whenever_clear_flags}", options
-          end
+          elsif (fetch :whenever_git_deploy)
+	          run "#{fetch :whenever_command} #{fetch :whenever_clear_flags}", options
         end
-
-        run "cd #{fetch :current_path} && #{fetch :whenever_command} #{fetch :whenever_update_flags}", options
+				if fetch :whenever_git_deploy
+					run "#{fetch :whenever_command} #{fetch :whenever_update_flags}", options
+				else
+        	run "cd #{fetch :current_path} && #{fetch :whenever_command} #{fetch :whenever_update_flags}", options
+        end
       end
     end
 
@@ -58,7 +63,11 @@ Capistrano::Configuration.instance(:must_exist).load do
     DESC
     task :clear_crontab do
       options = fetch(:whenever_options)
-      run "cd #{fetch :latest_release} && #{fetch :whenever_command} #{fetch :whenever_clear_flags}", options if find_servers(options).any?
+			if fetch :whenever_git_deploy
+				run "#{fetch :whenever_command} #{fetch :whenever_clear_flags}", options if find_servers(options).any?
+			else
+      	run "cd #{fetch :latest_release} && #{fetch :whenever_command} #{fetch :whenever_clear_flags}", options if find_servers(options).any?
+      end
     end
   end
 end
